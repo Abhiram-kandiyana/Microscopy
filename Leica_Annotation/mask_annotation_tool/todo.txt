@@ -1,0 +1,11 @@
+point check within box - done
+canvas with scroll bar - done
+update saving - done 
+save text file with contour centroid and area - done
+update quit button
+check size of the mask if equal to original image or not - done
+start from next to annotate - done
+Draw annotation marks from existing annotation on EDF - done
+Find contours and fill all the child contours to fill in the holes due to drawing error
+Add number of cells to the annotation json
+update (save) the cell contours in json after any post-processing. Now, it is saved as drawn in json. hole filling kind of post processing is done only on the masks (images) saved.
