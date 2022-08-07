@@ -1,0 +1,2 @@
+,seed threshold,data treshold,radius,error rate,Accuracy,Recall,precision,f1_score,Total true positives,Total false positives,Total false negatives,Total Groundtruth
+0,10,14,3,0.4,0.56,0.86,0.62,0.72,378,234,59,437

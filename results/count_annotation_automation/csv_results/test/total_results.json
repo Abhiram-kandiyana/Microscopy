@@ -1,0 +1,16 @@
+[
+  {
+    "Accuracy": 0.58,
+    "Recall": 0.86,
+    "Total Groundtruth": 713,
+    "Total false negatives": 100,
+    "Total false positives": 346,
+    "Total true positives": 613,
+    "data treshold": 14,
+    "error rate": 0.35,
+    "f1_score": 0.73,
+    "precision": 0.64,
+    "radius": 3,
+    "seed threshold": 10
+  }
+]
