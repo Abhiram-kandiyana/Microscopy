@@ -71,7 +71,7 @@ canvas = tk.Canvas(root,width = canvas_width, height = canvas_height)
 canvas.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 # xscrollbar.config(command=canvas.xview)
 # yscrollbar.config(command=canvas.yview)
-sectionNameStartsWith = ''
+sectionNameStartsWith = 'N'
 stackNameStartsWith = ''
 #imgDirInStackDir = 'Stack'  # dir within Stack dir from where to pick stack images to display
 imgDirInStackDir = ''
@@ -351,12 +351,12 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     listOfImages = os.listdir(os.path.join(image_folder, imgDirInStackDir))
     listOfImagesOnly = []
     for imgName in listOfImages:
-        print(os.path.join(image_folder,imgDirInStackDir,imgName))
         if not os.path.isdir(os.path.join(image_folder,imgDirInStackDir,imgName)):
             listOfImagesOnly.append(imgName)
     listOfImages = listOfImagesOnly
     # listOfImages = sorted(listOfImages, key=sort_slice_name_lst)
     listOfImages = sorted(listOfImages)
+
     print(listOfImages)
     # listOfImages.reverse()
     # if len(listOfImages) > 10:
@@ -444,6 +444,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     #canvas.tag_bind(imgID, "<B1-Motion>", addLine)
     canvas.tag_bind(imgID, "<ButtonRelease-1>", save_cell)
 
+    print(ANNOTATION_DICT)
     # draw already available annotation on canvas
     for mark in ANNOTATION_DICT['cells']:
         x = mark['centroid'][0] + CANVAS_IMAGE_X_SHIFT
@@ -516,8 +517,10 @@ def iterateFunction():
                                     continue
                                 elif MODE == 'update':
                                     try:
+                                        annotation_found = False
                                         for ann in annotation_case[section]:
                                             if ann.get('StackName', None) == NameOfStack:
+                                                annotation_found = True
                                                 ANNOTATION_DICT = copy.deepcopy(ann)  # already available annotation
                                                 # dictionary in
                                                 # this stack. Append new annotation to it.
@@ -532,10 +535,15 @@ def iterateFunction():
                                                 #     canvas.create_line(x - 5, y - 5, x + 5, y + 5, width=3, fill="#00ff00")
                                                 #     canvas.update()
                                                 print('Annotation json for this stack is found.')
+
                                         print('Please continue updating the annotation.')
                                     except:
                                         print('No already available annotation found for this stack to update.')
+
                                         sys.exit()
+                            elif MODE == "update":
+                                print("stack not annotated to update")
+                                continue
 
                     except IOError:
                         print("Creating new annotation file.")

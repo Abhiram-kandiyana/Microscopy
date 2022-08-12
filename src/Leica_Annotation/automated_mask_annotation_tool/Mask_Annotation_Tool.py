@@ -902,6 +902,8 @@ def iterateFunction():
 
             Stacks = os.listdir(os.path.join(path2Case, section))
             for stack in Stacks:
+                if "_31" not in stack:
+                    continue
                 start_time = time.time()
                 stack_name = stack
                 if (stack.startswith(stackNameStartsWith) and os.path.isdir(os.path.join(path2Case, section, stack))):

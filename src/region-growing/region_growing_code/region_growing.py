@@ -4,8 +4,8 @@ import numpy as np
 
 def get8n(x, y, shape):
     out = []
-    maxx = shape[1] - 1
-    maxy = shape[0] - 1
+    maxx = shape[0] - 1
+    maxy = shape[1] - 1
 
     # top left
     outx = min(max(x - 1, 0), maxx)

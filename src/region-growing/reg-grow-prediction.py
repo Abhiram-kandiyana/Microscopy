@@ -10,45 +10,45 @@ import importlib
 from region_growing_code import region_growing
 
 # Import constants module
-loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'C:\Users\KAVYA\Abhiram\microscopy\constants\constants.py')
+loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'/Users/abhiramkandiyana/Microscopy/constants/constants.py')
 spec = importlib.util.spec_from_loader( 'mc_constants', loader )
 mc_constants = importlib.util.module_from_spec( spec )
 loader.exec_module( mc_constants)
 
-slide_name = mc_constants.Slide1_64x64_1
-StackName = "StackName"
-path=os.path.join(r'C:\Users\KAVYA\Abhiram\microscopy\16bitimages',slide_name)
-annotation_path = os.path.join(path,'count_annotaion')
+slide_name = mc_constants.slide1_64x64_1_Copy
 
-annotated_path = os.path.join(r'C:\Users\KAVYA\Abhiram\microscopy\16bitimages',slide_name+"_annotated")
+StackName = mc_constants.stack_name_const
+path=os.path.join(mc_constants.inputImages,slide_name)
+annotation_path = os.path.join(path,mc_constants.count_annotation_const)
+
+annotated_path = os.path.join(mc_constants.inputImages,slide_name+mc_constants.annotated_const)
 if not os.path.exists(annotated_path):
     os.makedirs(annotated_path)
-count_annotated_folder_path = os.path.join(path,'count_annotated_images')
+count_annotated_folder_path = os.path.join(path,mc_constants.count_annotated_images)
 if not os.path.exists(count_annotated_folder_path):
     os.makedirs(count_annotated_folder_path)
 
-image_folder = 'NeoCx'
+image_folder = mc_constants.image_dir
 image_path = os.path.join(path,image_folder)
 
-count_annotation_dir = 'count_annotaion'
-
 image_dir = os.listdir(image_path)
-count_annotations = os.listdir(path+r'\count_annotaion')[0] 
+count_annotations = os.listdir(os.path.join(path,mc_constants.count_annotation_const))[0]
+print(count_annotations)
 area_thresh = 4
 
 annotation_json = {}
 annotated_stacks_list = []
 slide_json_arr = []
 try:
-    with open(os.path.join(annotated_path, "ManualMaskAnnotation.json"), 'r+') as fp:
-       annotation_json = json.load(fp)
+    with open(os.path.join(annotated_path, mc_constants.manual_mask_annotation_json), 'r+') as fp:
+        annotation_json = json.load(fp)
     slide_json_arr = annotation_json[image_folder]
     annotated_stacks_list = [ stack[StackName] for stack in slide_json_arr ]
 except:
-    print("Manual Maska annotation not found")
+    print("Manual Mask annotation not found")
 
 try:
-    with open(os.path.join(path,count_annotation_dir, count_annotations), 'r') as ref_fp:
+    with open(os.path.join(path,mc_constants.count_annotation_const, count_annotations), 'r') as ref_fp:
         annotation_dict = json.load(ref_fp)
 except:
     print('Reference annotation json not available.')
@@ -58,9 +58,9 @@ centroid_dict = {}
 for stackNo,stack in enumerate(annotation_dict):
     stackName = stack[StackName].split('_')
     centroid_dict[stackName[-2]+'_'+stackName[-1]] = []
-    for cell in stack['cells']:
-        centroid_arr = cell['centroid']
-        centroid_arr.insert(0,cell['sliceNo'])
+    for cell in stack[mc_constants.cells_const]:
+        centroid_arr = cell[mc_constants.centroid_const]
+        centroid_arr.insert(0,cell[mc_constants.sliceNo_const])
         centroid_dict[stackName[-2]+'_'+stackName[-1]].append(centroid_arr)
 
 labels_arr  = []
@@ -71,9 +71,7 @@ no_of_stacks=0
 area_count=0
 for stack in image_dir:
     stackFullName = slide_name+'_'+image_folder+'_'+stack
-    # if stack in ["1_30","1_31"]:
-    #     continue
-    if stackFullName not in annotated_stacks_list:  
+    if stackFullName not in annotated_stacks_list:
         try:
             gt_centroids_arr = np.array(centroid_dict[stack])
         except KeyError:
@@ -164,7 +162,7 @@ for stack in image_dir:
                     area = stats[1,cv2.CC_STAT_AREA]
 
                 if(area <= area_thresh):
-                    area_count+1;
+                    area_count+1
 
 
 

@@ -277,3 +277,14 @@ Slide2_NeoCx_14_19
 Slide2_NeoCx_14_2
 slide1-64x64_1_NeoCx_21_2
 slide1-64x64_1_NeoCx_1_31
+slide1-64x64_1_Copy_NeoCx_17_21
+slide1-64x64_1_Copy_NeoCx_17_21
+slide1-64x64_1_Copy_NeoCx_16_31
+slide1-64x64_1_Copy_NeoCx_10_31
+slide1-64x64_1_Copy_NeoCx_14_31
+slide1-64x64_1_Copy_NeoCx_20_31
+slide1-64x64_1_Copy_NeoCx_15_31
+slide1-64x64_1_Copy_NeoCx_21_31
+slide1-64x64_1_Copy_NeoCx_11_31
+slide1-64x64_1_Copy_NeoCx_18_31
+slide1-64x64_1_Copy_NeoCx_1_31

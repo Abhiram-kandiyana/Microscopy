@@ -1,6 +1,35 @@
+import os
 
-slide1_64X64_split = r"C:\Users\KAVYA\Abhiram\microscopy\16bitimages\slide1-64x64-split"
-slide2_split =  r"C:\Users\KAVYA\Abhiram\microscopy\16bitimages\Slide2-split"
+train = "train"
+test = "test"
+valid = "val"
+algo_test = "testing"
+image_dir = "NeoCx"
+old = "old_"
+slide1_64x64_1 ="slide1-64x64_1"
+slide1_64x64_1_Copy = "slide1-64x64_1_Copy"
+
+
+Slide2 = "Slide2"
+stack_name_const = "StackName"
+small_stack_name_const = "stackName"
+stacks_const = "stacks"
+stack_length = 10
+visited_stacks_dir = "visited_stacks"
+count_annotation_const = "count_annotaion"
+count_annotated_images = 'count_annotated_images'
+annotated_const = "_annotated"
+manual_mask_annotation_json = "ManualMaskAnnotation.json"
+cells_const = 'cells'
+centroid_const = 'centroid'
+sliceNo_const = 'sliceNo'
+
+
+
+inputImages = r"/Users/abhiramkandiyana/Microscopy/16bitimages"
+slide_64X64_1_path = os.path.join(inputImages,slide1_64x64_1)
+slide1_64X64_split = os.path.join(inputImages,"slide1-64x64-split")
+slide2_split = os.path.join(inputImages,"Slide2-split")
 slide1_64X64_annotated = r"C:\Users\KAVYA\Abhiram\microscopy\16bitimages\slide1-64x64_1_annotated"
 slide2_annotated = r"C:\Users\KAVYA\Abhiram\microscopy\16bitimages\Slide2_annotated"
 slide1_64X64_train = r"C:\Users\KAVYA\Abhiram\microscopy\16bitimages\slide1-64x64-split\NeoCx\train"
@@ -36,19 +65,6 @@ predicted_clusters_images_path = r"C:\Users\KAVYA\Abhiram\microscopy\mean-shift\
 
 
 
-train = "train"
-test = "test"
-valid = "val"
-algo_test = "testing"
-image_dir = "NeoCx"
-old = "old_"
-Slide1_64x64_1 ="slide1-64x64_1"
-Slide2 = "Slide2"
-stack_name_const = "StackName"
-small_stack_name_const = "stackName"
-stacks_const = "stacks"
-stack_length = 10
-visited_stacks_dir = "visited_stacks"
 
 def group_consecutives(vals, step=1):
     """Return list of consecutive lists of numbers from vals (number list)."""
