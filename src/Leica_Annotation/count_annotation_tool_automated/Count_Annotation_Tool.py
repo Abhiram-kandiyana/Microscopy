@@ -330,12 +330,33 @@ def save_masks(saveTo_folder, imgName_list, imgs_list):
 
 
 def draw_old_annotations():
+    global i
+    global  IMAGE_ANNOTATION_UPDATED
+    global NEXT_IMG_INDEX
+    global TEXT_ID
+    global TEXT_ID_ANNOTATED
+
+    IMAGE_ANNOTATION_UPDATED = False
+    NEXT_IMG_INDEX = i+1
+    if TEXT_ID_ANNOTATED != -1:
+        canvas.delete(TEXT_ID_ANNOTATED)
+
+    TEXT_ID_ANNOTATED = canvas.create_text(520, 140, text="Annotating Image: " + str(i), fill="white", font=('Helvetica 15 bold'))
+
     ann_dict_with_lineIds = []
+    for j in LINE_IDS_PREV:
+        canvas.delete(j[0])
+        canvas.delete(j[1])
+
     for mark in ANNOTATION_DICT['cells']:
-        x = (mark['centroid'][0] * SFACTOR) + CANVAS_IMAGE_X_SHIFT
-        y = (mark['centroid'][1] * SFACTOR) + CANVAS_IMAGE_Y_SHIFT
-        line1 = canvas.create_line(x - MARKER_SIZE, y + MARKER_SIZE, x + MARKER_SIZE, y - MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
-        line2 = canvas.create_line(x - MARKER_SIZE, y - MARKER_SIZE, x + MARKER_SIZE, y + MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+        line1=-1
+        line2=-1
+        if(mark['sliceNo'] == i):
+            x = (mark['centroid'][0] * SFACTOR) + CANVAS_IMAGE_X_SHIFT
+            y = (mark['centroid'][1] * SFACTOR) + CANVAS_IMAGE_Y_SHIFT
+            line1 = canvas.create_line(x - MARKER_SIZE, y + MARKER_SIZE, x + MARKER_SIZE, y - MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+            line2 = canvas.create_line(x - MARKER_SIZE, y - MARKER_SIZE, x + MARKER_SIZE, y + MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+            LINE_IDS_PREV .append([line1,line2])
         mark['lineIds'] = [line1,line2]
         ann_dict_with_lineIds.append(mark)
     ANNOTATION_DICT['cells'] = ann_dict_with_lineIds
@@ -352,12 +373,22 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     global RETURN
     global IMAGE_UPDATE
     global ANNOTATION_DICT, cell, MASKS, DISECTOR_PARAM, REF_IMG_DIR, IS_VALID_STACK
+    global LINE_IDS_PREV
+    global IMAGE_ANNOTATION_UPDATED
     global imgID
+    global NEXT_IMG_INDEX
+    global TEXT_ID
+    global TEXT_ID_ANNOTATED
     RETURN = False
     QUIT = False
     i = 0
     pauseFlag = False
     rearFlag = False
+    LINE_IDS_PREV = []
+    IMAGE_ANNOTATION_UPDATED = True
+    NEXT_IMG_INDEX = -1
+    TEXT_ID = -1
+    TEXT_ID_ANNOTATED = -1
 
 
     # read ref annotation image and display for ref
@@ -484,7 +515,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     canvas.tag_bind(imgID, "<ButtonRelease-1>", save_cell)
 
     # draw already available annotation on canvas
-    draw_old_annotations()
+    # draw_old_annotations()
 
     while not RETURN:
         #print("Inside while")
@@ -493,14 +524,20 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
             #ImageList[i % 10] = copy.deepcopy(ImageList_COPY[i % 10])
             #imgWithAnnotation = draw_cross(ImageList[i % 10], listOfPoints)
             #print(canvas.bbox(tk.ALL))
+            if i == StackSize:
+                i = 0
+            if i < 0:
+                i = StackSize - 1
+            if TEXT_ID != -1:
+                canvas.delete(TEXT_ID)
+
+            TEXT_ID = canvas.create_text(720, 140, text="Index: " + str(i), fill="white", font=('Helvetica 15 bold'))
             img = ImageTk.PhotoImage(PIL.Image.fromarray(ImageList[i % StackSize]))
             #imgID = canvas.create_image(600, 0, image=img, anchor=tk.NW)
             canvas.itemconfig(imgID,image=img)
             #canvas.create_image(img.width() + 20, 400, image=img, anchor=tk.W)
-        if i == StackSize:
-            i = 0
-        if i < 0:
-            i = StackSize-1
+            if IMAGE_ANNOTATION_UPDATED:
+                draw_old_annotations()
         canvas.update()
     print("After Return")
     #save_masks(saveTo_folder, listOfImages, MASKS)
@@ -510,6 +547,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
 
 def iterateFunction():
     global mouseX, mouseY, ANNOTATION_DICT, IS_VALID_STACK,REF_IMG_DIR
+    global TEXT_ID
     path2Case = dirname
     #print(dirname)
     #print(dirname)
@@ -553,6 +591,11 @@ def iterateFunction():
                                         for ann in annotation_case[section]:
                                             if ann.get('StackName', None) == NameOfStack:
                                                 ANNOTATION_DICT = copy.deepcopy(ann)  # already available annotation
+                                                for mark in ANNOTATION_DICT['cells']:
+                                                    mark['lineIds'] = [-1,-1]
+
+                                                print(ANNOTATION_DICT['cells'])
+
                                                 # dictionary in
                                                 # this stack. Append new annotation to it.
                                                 old_count = ANNOTATION_DICT['count']
@@ -581,6 +624,11 @@ def iterateFunction():
                     if MODE == 'new':
                         annotation_case['all_stacks'] += 1  # keep track of total stacks in the case being annotated
                     IS_VALID_STACK = ReadSequenceOfImages(os.path.join(path2Case,section,stack),NameOfStack)
+                    if TEXT_ID != -1:
+                        canvas.delete(TEXT_ID)
+
+                    if TEXT_ID_ANNOTATED != -1:
+                        canvas.delete(TEXT_ID_ANNOTATED)
 
                     if MODE == 'update':
                         #delete old annotation
@@ -600,14 +648,16 @@ def iterateFunction():
                         # #EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 25)
                         try:
                             EDF_img = cv2.imread(os.path.join(REF_IMG_DIR, NameOfStack + '.bmp'), -1)
+                            EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 75)
+                            EDF_img = draw_cross(EDF_img, ANNOTATION_DICT['cells'][:])
+                            cv2.imwrite(os.path.join(path2Case, save_annotation_folder_name, NameOfStack + '.png'),
+                                        EDF_img)
                         except:
-                            print("Cannot find reference images at path {}".format(os.path.join(REF_IMG_DIR, NameOfStack + '.bmp')))
+                            print("Cannot find reference images for stack {}".format(NameOfStack))
                         #EDF_img = cv2.resize(refImg, None, fx=SFACTOR, fy=SFACTOR, interpolation=cv2.INTER_CUBIC)  # resize by scale factor
                         #blank = np.zeros_like(EDF_img)
                         #EDF_img = cv2.merge([blank, blank, EDF_img])  # make it color
-                        EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 75)
-                        EDF_img = draw_cross(EDF_img, ANNOTATION_DICT['cells'][:])
-                        cv2.imwrite(os.path.join(path2Case, save_annotation_folder_name, NameOfStack+'.png'), EDF_img)
+
 
                         if not section in annotation_case:
                             annotation_case[section] = []
@@ -669,6 +719,15 @@ def remove_centroid():
 
     funcId1 = canvas.tag_bind(imgID, "<ButtonRelease-1>", get_centroids)
 
+def move_to_next_img():
+    global IMAGE_ANNOTATION_UPDATED
+    global NEXI_IMG_INDEX
+    global i
+    global IMAGE_UPDATE
+    i=NEXT_IMG_INDEX
+    IMAGE_UPDATE = True
+    IMAGE_ANNOTATION_UPDATED = True
+
 
 def printVideoSpeed():
     print("Tkinter is easy to use!")
@@ -728,6 +787,14 @@ def createGUI():
                               bg="peachpuff",
                               command=remove_centroid)
 
+    next_img = tk.Button(
+                         canvas,
+                         text="ANNOTATION COMPLETE",
+                         fg="red",
+                         bg="peachpuff",
+                         command=move_to_next_img
+                         )
+
     #calltoCreateScale(frame)
 
     OpenFolderButton.grid(column=0,row=0,padx=10,pady=10,sticky=tk.W+tk.E)
@@ -737,6 +804,8 @@ def createGUI():
     Quit_button.grid(column=2,row=0,padx=10,pady=10,sticky=tk.W+tk.E)
     refImgDir_button.grid(column=3, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
     remove_button.grid(column=4, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
+    next_img.grid(column=5, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
+
 
 
 
