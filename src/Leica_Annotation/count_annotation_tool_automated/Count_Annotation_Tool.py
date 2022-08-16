@@ -510,9 +510,10 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     imgID = canvas.create_image(CANVAS_IMAGE_X_SHIFT, CANVAS_IMAGE_Y_SHIFT, image=img, anchor=tk.NW)
     canvas.focus_set()
     canvas.bind("<Key>", key)
-    canvas.tag_bind(imgID, "<Button-1>", xy)
+    canvas.tag_bind(imgID, "<Double-Button-1>", xy)
     #canvas.tag_bind(imgID, "<B1-Motion>", addLine)
-    canvas.tag_bind(imgID, "<ButtonRelease-1>", save_cell)
+    canvas.tag_bind(imgID, "<Double-ButtonRelease-1>", save_cell)
+    canvas.tag_bind(imgID, "<ButtonRelease-1>", get_centroids)
 
     # draw already available annotation on canvas
     # draw_old_annotations()
@@ -714,10 +715,7 @@ def get_refImgDir():
         #print ("\nNo directory selected - initializing with %s \n" % os.getcwd())
         return REF_IMG_DIR
 
-def remove_centroid():
-    global funcId1, funcId2
 
-    funcId1 = canvas.tag_bind(imgID, "<ButtonRelease-1>", get_centroids)
 
 def move_to_next_img():
     global IMAGE_ANNOTATION_UPDATED
@@ -781,11 +779,6 @@ def createGUI():
                                  fg="blue",
                                  bg="peachpuff",
                                  command=get_refImgDir) #to get the dir of previously annotated EDFs for ref
-    remove_button = tk.Button(canvas,
-                              text="Remove",
-                              fg="red",
-                              bg="peachpuff",
-                              command=remove_centroid)
 
     next_img = tk.Button(
                          canvas,
@@ -803,7 +796,6 @@ def createGUI():
     #Resume_Button.grid(column=3,row=0,padx=10,pady=10,sticky=tk.W+tk.E)
     Quit_button.grid(column=2,row=0,padx=10,pady=10,sticky=tk.W+tk.E)
     refImgDir_button.grid(column=3, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
-    remove_button.grid(column=4, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
     next_img.grid(column=5, row=0, padx=10, pady=10, sticky=tk.W + tk.E)
 
 
