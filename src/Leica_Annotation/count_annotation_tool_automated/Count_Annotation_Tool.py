@@ -11,6 +11,7 @@ from tkinter import messagebox
 import os
 import sys
 import cv2
+import importlib
 from multiprocessing import Queue
 from PutDisector_OnImage import PutDisectorOnImage
 import threading
@@ -19,7 +20,7 @@ import copy
 from tqdm import tqdm
 from copy import deepcopy
 #from sort_slice_name_lst import *
-
+global total_time_taken
 global mouseX,mouseY
 global videoSpeed
 global rearFlag
@@ -36,6 +37,15 @@ pauseFlag = False
 CANVAS_IMAGE_X_SHIFT=450 #x start of image on canvas
 CANVAS_IMAGE_Y_SHIFT=150
 VALID_CELL_FLAG = True #if started drawing within the disector box
+total_time_taken = 0
+
+# Import constants module
+loader = importlib.machinery.SourceFileLoader('mc_constants',r'/Users/abhiramkandiyana/Microscopy/constants/constants.py')
+spec = importlib.util.spec_from_loader('mc_constants', loader)
+mc_constants = importlib.util.module_from_spec(spec)
+loader.exec_module(mc_constants)
+
+visited_json = mc_constants.visited_json
 
 '''
 TBD 
@@ -173,17 +183,20 @@ def save_cell(event):
     #cv2.imshow('mask',temp)
     x = lastx
     y = lasty
-    canvas.create_line(x-MARKER_SIZE, y+MARKER_SIZE, x+MARKER_SIZE, y-MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
-    canvas.create_line(x-MARKER_SIZE, y-MARKER_SIZE, x+MARKER_SIZE, y+MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+    canvas.create_line(x-MARKER_SIZE, y+MARKER_SIZE, x+MARKER_SIZE, y-MARKER_SIZE, width=MARKER_WIDTH, fill="#0000FF")
+    canvas.create_line(x-MARKER_SIZE, y-MARKER_SIZE, x+MARKER_SIZE, y+MARKER_SIZE, width=MARKER_WIDTH, fill="#0000FF")
     print("original coordinates: ({}, {})".format(x,y))
-    
-    #save the cell
+     #save the cell
     ANNOTATION_DICT['cells'].append(cell)
+    global correction_count
+    correction_count = correction_count + 1
 #Modifications by Palak:End
 
 def get_centroids(event):
     global centroidRemovalRadius
     global cursorX, cursorY
+    global correction_count
+
     cursorX, cursorY = round((event.x - CANVAS_IMAGE_X_SHIFT) / SFACTOR), round(
         (event.y - CANVAS_IMAGE_Y_SHIFT) / SFACTOR)
     canvas.focus_set()
@@ -197,6 +210,7 @@ def get_centroids(event):
     centroids_copy = deepcopy(centroids)
     for j in range(len(centroids_copy)):
         if centroids_copy[j]['sliceNo'] == i and centroids_copy[j]['centroid'] in  centroidsNearBy :
+            correction_count = correction_count + 1
             for line in centroids_copy[j]['lineIds']:
                 canvas.delete(line)
             del centroids[j]
@@ -341,7 +355,7 @@ def draw_old_annotations():
     if TEXT_ID_ANNOTATED != -1:
         canvas.delete(TEXT_ID_ANNOTATED)
 
-    TEXT_ID_ANNOTATED = canvas.create_text(520, 140, text="Annotating Image: " + str(i), fill="white", font=('Helvetica 15 bold'))
+    TEXT_ID_ANNOTATED = canvas.create_text(520, 140, text="Annotating Image: " + str(i), fill="black", font=('Helvetica 15 bold'))
 
     ann_dict_with_lineIds = []
     for j in LINE_IDS_PREV:
@@ -379,6 +393,9 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     global NEXT_IMG_INDEX
     global TEXT_ID
     global TEXT_ID_ANNOTATED
+    global correction_count
+    global total_correction_count
+    correction_count = 0
     RETURN = False
     QUIT = False
     i = 0
@@ -510,9 +527,9 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     imgID = canvas.create_image(CANVAS_IMAGE_X_SHIFT, CANVAS_IMAGE_Y_SHIFT, image=img, anchor=tk.NW)
     canvas.focus_set()
     canvas.bind("<Key>", key)
-    canvas.tag_bind(imgID, "<Double-Button-1>", xy)
+    canvas.tag_bind(imgID, "<Button-2>", xy)
     #canvas.tag_bind(imgID, "<B1-Motion>", addLine)
-    canvas.tag_bind(imgID, "<Double-ButtonRelease-1>", save_cell)
+    canvas.tag_bind(imgID, "<ButtonRelease-2>", save_cell)
     canvas.tag_bind(imgID, "<ButtonRelease-1>", get_centroids)
 
     # draw already available annotation on canvas
@@ -532,7 +549,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
             if TEXT_ID != -1:
                 canvas.delete(TEXT_ID)
 
-            TEXT_ID = canvas.create_text(720, 140, text="Index: " + str(i), fill="white", font=('Helvetica 15 bold'))
+            TEXT_ID = canvas.create_text(720, 140, text="Current Image: " + str(i), fill="black", font=('Helvetica 15 bold'))
             img = ImageTk.PhotoImage(PIL.Image.fromarray(ImageList[i % StackSize]))
             #imgID = canvas.create_image(600, 0, image=img, anchor=tk.NW)
             canvas.itemconfig(imgID,image=img)
@@ -540,6 +557,11 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
             if IMAGE_ANNOTATION_UPDATED:
                 draw_old_annotations()
         canvas.update()
+
+    visited["stacks"].append({"stackName":NameOfStack,"correctedMaskCount":correction_count})
+
+    # global corrected_masks
+    total_correction_count = total_correction_count + correction_count
     print("After Return")
     #save_masks(saveTo_folder, listOfImages, MASKS)
     # cv2.destroyWindow('Ref Annotation')
@@ -549,7 +571,13 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
 def iterateFunction():
     global mouseX, mouseY, ANNOTATION_DICT, IS_VALID_STACK,REF_IMG_DIR
     global TEXT_ID
+    global total_correction_count
+    global total_time_taken
+    global visited
+    total_correction_count = 0
     path2Case = dirname
+    visited = {"stacks": [], "totalCorrectedCount": 0}
+
     #print(dirname)
     #print(dirname)
     if not os.path.exists(os.path.join(dirname, save_annotation_folder_name)):
@@ -561,6 +589,17 @@ def iterateFunction():
     annotation_case['total_count'] = 0
     annotation_case['all_stacks'] = 0
     annotation_case['valid_stacks'] = 0
+    try:
+        with open(os.path.join(dirname, visited_json), 'r') as read_fp:
+            visited = json.load(read_fp)
+        total_correction_count = visited["totalCorrectedCount"]
+        # total_time_taken = visited["totalTimeTakenInMinutes"]
+    except:
+        print("create a new visited json")
+        total_correction_count=0
+        # total_time_taken = 0
+
+
 
     Sections = os.listdir(path2Case)
     for section in tqdm(Sections):
@@ -570,6 +609,7 @@ def iterateFunction():
             Stacks = os.listdir(os.path.join(path2Case,section))
             for stack in Stacks:
                 print("stack name",stack)
+                # start_time = time.time()
                 if (stack.startswith(stackNameStartsWith) and os.path.isdir(os.path.join(path2Case,section,stack))):
                     #print('Now working')
                     NameOfStack = os.path.basename(os.path.normpath(dirname))+'_'+section+'_'+stack
@@ -577,6 +617,20 @@ def iterateFunction():
                     print('NameOfStack:',NameOfStack)
                     IS_VALID_STACK = True  # valid stack if stack has atleast 10 images and not 'skipped' (by
                     # pressing 's') during annotation
+                    try:
+                        stack_found = False
+                        for visited_stack in visited["stacks"]:
+                            print("visited stacks:", visited_stack["stackName"])
+                            if NameOfStack == visited_stack["stackName"]:
+                                stack_found = True
+                                continue
+                        if (stack_found):
+                            print("stack {} is already verified".format(NameOfStack))
+                            continue
+                        else:
+                            print("stack needs to be updated")
+                    except Exception as e:
+                        print("error while checking visited json {}",e)
                     #checkforNameOfStackInFile = False
                     #OpenFile = open(os.path.join(dirname+"_annotated","ManualAnnotation.txt"),'r')
                     try:
@@ -638,12 +692,12 @@ def iterateFunction():
                             os.remove(os.path.join(path2Case, save_annotation_folder_name, NameOfStack+'.png'))
                         except:
                             print("file at {} not found".format(os.path.join(path2Case, save_annotation_folder_name, NameOfStack+'.png')))
-
-                        annotation_case['valid_stacks'] -= 1  # remove from valid stack count and add later if valid stack.
+                        #TALK TO PALAK
+                        # annotation_case['valid_stacks'] -= 1  # remove from valid stack count and add later if valid stack.
 
                     # save annotation if valid stack
                     if IS_VALID_STACK:
-                        annotation_case['valid_stacks'] += 1  # keep track of valid stacks in the case being annotated
+                        # annotation_case['valid_stacks'] += 1  # keep track of valid stacks in the case being annotated
                         # draw annotation on EDF image and save image
                         # EDF_img = cv2.imread(os.path.join(path2Case,section,stack, EDFDirInStackDir, EDF_name), cv2.IMREAD_COLOR)
                         # #EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 25)
@@ -671,8 +725,12 @@ def iterateFunction():
                         os.rename(os.path.join(path2Case,section,stack), os.path.join(path2Case,section,'invalid_'+stack))
                     # update json in case of valid and invalid stacks both because 'all_stacks' field is updated in
                     # both cases
+                    visited["totalCorrectedCount"] = total_correction_count
+                    # total_time_taken += (time.time() - start_time) / 60
                     with open(os.path.join(dirname, save_annotation_folder_name, "ManualAnnotation.json"), 'w') as fp:
                         json.dump(annotation_case, fp, sort_keys=True, indent=2)
+                    with open(os.path.join(dirname, visited_json), 'w') as fp:
+                        json.dump(visited, fp, sort_keys=True, indent=2)
                     #OpenFile.close()
     #with open(os.path.join(dirname+"_annotated","ManualAnnotation.json"), 'w') as fp:
         #json.dump(annotation_case, fp)

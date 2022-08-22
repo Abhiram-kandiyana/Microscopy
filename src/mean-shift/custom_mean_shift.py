@@ -15,13 +15,13 @@ import random
 global count
 
 # Import constants module
-loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'C:\Users\KAVYA\Abhiram\microscopy\constants\constants.py' )
+loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'/Users/abhiramkandiyana/Microscopy/constants/constants.py' )
 spec = importlib.util.spec_from_loader( 'mc_constants', loader )
 mc_constants = importlib.util.module_from_spec( spec )
 loader.exec_module( mc_constants)
 # img = cv2.imread('./data/merged.png')
 
-mode = mc_constants.algo_test
+mode = mc_constants.test
 stack_length = mc_constants.stack_length
 
 if(mode == mc_constants.train):
@@ -97,12 +97,12 @@ best_treshold=0
 max_recall = 0
 # seed_treshold_arr = [10,14,21,23,25,27,29]
 # data_treshold_arr = [10,12,14,16,18,20,22]
-seed_treshold_arr = [14]
+seed_treshold_arr = [10]
 data_treshold_arr = [14]
 
 # treshold_arr = [10]
 # treshold_arr1 = [10]
-testing = True
+testing = False
 
 # rejected_path = os.path.join(path,'rejected')
 # accepted_path = os.path.join(path,'accepted')

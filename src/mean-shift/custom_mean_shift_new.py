@@ -13,11 +13,10 @@ import math
 import importlib
 import random
 
-from requests import delete
 global count
 
 # Import constants module
-loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'C:\Users\KAVYA\Abhiram\microscopy\constants\constants.py')
+loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'/Users/abhiramkandiyana/Microscopy/constants/constants.py')
 spec = importlib.util.spec_from_loader( 'mc_constants', loader )
 mc_constants = importlib.util.module_from_spec( spec )
 loader.exec_module( mc_constants)
@@ -31,6 +30,7 @@ if(mode == mc_constants.train):
     mask_path = mc_constants.slide1_64X64_masks_train
 
 elif(mode == mc_constants.test):
+    slideName = mc_constants.Slide2
     image_path= mc_constants.slide2_test
     mask_path = mc_constants.slide2_masks_test
 
@@ -44,7 +44,7 @@ elif(mode == mc_constants.algo_test):
 
 
 result_path = "./custom_ms_results/"
-image_dir = mc_constants.image_dir
+image_dir_name = mc_constants.image_dir
 mask_img_path = mask_path
 
 marked_img_path = mc_constants.marked_images_path
@@ -111,7 +111,7 @@ radius_arr = [3]
 # accepted_path = os.path.join(path,'accepted')
 
 # if(testing):
-    
+
 #     try:
 #         shutil.rmtree(rejected_path)
 #     except OSError as e:
@@ -142,13 +142,15 @@ for cluster_radius in radius_arr:
             total_cents=0
             result_csv_list= []
             centroids_json_arr = []
+            total_count = 0
             for stackNo,stackName in enumerate(masks):
                 print(stackName)
+                stackNameFull = slideName+'_'+image_dir_name+'_'+stackName
                 stack_path = os.path.join(image_path,stackName)
                 sliceNames  = os.listdir(stack_path)
                 images = []  
                 images1 = [] 
-                centroids_arr = [] 
+                centroids_arr = []
                 mask_centroids_arr = []
                 # print(sliceNames[0])
                 # print(stackName)
@@ -184,7 +186,7 @@ for cluster_radius in radius_arr:
                         mask_centroids_arr.append(np.insert(j,0,int(sliceNo)))
                 images_array= np.array(images) 
                 images_array1 = np.array(images1)
-                centroids_arr = np.array(centroids_arr) 
+                centroids_arr = np.array(centroids_arr)
                 mask_centroids_arr = np.array(mask_centroids_arr)
                 # print(centroids_arr[0])
                 # print(mask_centroids_arr[0])
@@ -245,7 +247,6 @@ for cluster_radius in radius_arr:
                                 #     print("centroids",centroids)
                                 #     print("featureset",featureset)
                                 #     print("classification",classification)
-                                #     exit()
                                 centroid = centroids[classification]
                                 # if int(centroid[0]) == 6:
                                 #     print(centroid)
@@ -333,10 +334,6 @@ for cluster_radius in radius_arr:
                             for i,j in enumerate(new_centroids):
                                 new_centroids_dict[i] = j
                             # print(new_centroids_dict)
-                            # exit()
-
-                            # # print(new_centroids)
-                            # exit()
                             new_centroids1 = []
                             # # new_centroids_copy = deepcopy(new_centroids)
                             visited = []
@@ -762,6 +759,11 @@ for cluster_radius in radius_arr:
                             else:
                                 labels[i[0],i[1],i[2]] = 100
 
+
+
+
+
+
                 
                 # labels_path2 = os.path.join('./labels2',stackName)
                 # if not os.path.exists(labels_path2):
@@ -825,7 +827,7 @@ for cluster_radius in radius_arr:
                 #     img = cv2.circle(img, (x,y), radius=0, color=(255, 0, 0), thickness=-1)
                 #     cv2.imwrite(os.path.join(marked_img_dir_path,sliceNames[img_index]),img)
 
-            
+
                 for index,value in enumerate(mask_centroids_arr):
                     x = int(value[1])
                     y = int(value[2])
@@ -837,6 +839,36 @@ for cluster_radius in radius_arr:
                 for k in np.unique(labels):
                     if np.count_nonzero(labels == k) < 4:
                         labels[labels == k] = 100
+
+                cells = []
+                # adding the predicted centroids to json.
+                labels_uniques = np.unique(labels)
+                for k in labels_uniques:
+                    index_array = np.array([]);
+                    if k != 100:
+                        for index, img in enumerate(labels):
+                            if k in img:
+                                index_array = np.argwhere(img == k)
+                                # print(index_array)
+                                blank_img = np.zeros(img.shape)
+                                for i in index_array:
+                                    blank_img[i[0], i[1]] = 255
+                                blank_img = np.uint8(blank_img)
+
+                                _, _, _, cluster_centroids = cv2.connectedComponentsWithStats(blank_img, 8, cv2.CV_32S)
+                                if (len(cluster_centroids) > 2):
+                                    cv2.imshow("blank image", blank_img)
+                                    cv2.waitKey(0)
+                                    print(len(cluster_centroids))
+                                for centroid in cluster_centroids[1:]:
+                                    cluster_centroid = np.uint8(centroid)
+                                    print(cluster_centroid)
+                                    cells.append({"centroid": cluster_centroid, "lineIds": [-1, -1], "sliceNo": index})
+
+                count = len(cells)
+                total_count += count
+
+                ManualAnnotation.append( {"StackName": stackNameFull, "cells": cells, "count": count,"height":height,"width":width })
 
                 
 
@@ -888,7 +920,7 @@ for cluster_radius in radius_arr:
                 # print(mask_centroids_arr)
                 # print(labels.shape)
                 for i,j in enumerate(np.int64(mask_centroids_arr)):
-                
+
                     cl = labels[j[0],j[2],j[1]]
                     if labels[j[0],j[2],j[1]] != 100:
                         labels[labels == cl] = 100
@@ -997,14 +1029,14 @@ print("Best seed Treshold ",best_seed_treshold)
 print("Best data Treshold ",best_data_treshold)
 print("Best radius ",best_radius)
 print("min error rate ",min_error)
-print( "best_accuracy ",best_accuracy) 
+print( "best_accuracy ",best_accuracy)
 print("best recall ",best_recall)
 print("best_precision ",best_precision)
 print("best_f1_score ",best_f1_score)
 
 
 # with open("./ResultList.json", 'a') as fp:
-#     json.dump(result_json_list, fp, sort_keys=True, indent=2)  
+#     json.dump(result_json_list, fp, sort_keys=True, indent=2)
 
 if(not os.path.exists(os.path.join(csv_results_path,mode))):
     os.makedirs(os.path.join(csv_results_path,mode))
