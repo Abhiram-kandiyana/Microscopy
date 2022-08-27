@@ -14,6 +14,7 @@ import cv2
 from multiprocessing import Queue
 from PutDisector_OnImage import PutDisectorOnImage
 import threading
+import time
 
 from sort_slice_name_lst import *
 
@@ -30,7 +31,7 @@ rearFlag = False
 pauseFlag = False
 CANVAS_IMAGE_X_SHIFT = 500  # x start of image on canvas
 CANVAS_IMAGE_Y_SHIFT = 100  # -100
-SCALE_FACTOR = 3  # Must be Interger - scale image by this factor for better visual
+SCALE_FACTOR = 4  # Must be Interger - scale image by this factor for better visual
 VALID_CELL_FLAG = True  # if started drawing within the disector box
 
 '''
@@ -375,8 +376,8 @@ def draw_cross(img, listOfLocation):
 
 def draw_ref_annotations(img_list, ref_annotation_stack_cells):
     for cell in ref_annotation_stack_cells:
-        x = cell['centroid'][0]*SCALE_FACTOR
-        y = cell['centroid'][1]*SCALE_FACTOR
+        x = cell['centroid'][0] * SCALE_FACTOR
+        y = cell['centroid'][1] * SCALE_FACTOR
         sliceNo = cell['sliceNo']
         cv2.line(img_list[sliceNo], (x - 1, y - 1), (x + 1, y + 1), (0, 255, 0), 2)
         cv2.line(img_list[sliceNo], (x + 1, y - 1), (x - 1, y + 1), (0, 255, 0), 2)
@@ -466,7 +467,14 @@ def ReadSequenceOfImages(image_folder, saveTo_folder, NameOfStack, ref_annotatio
     # ImageList_COPY = []
     for img_name in listOfImages:
         img = cv2.imread(os.path.join(image_folder, imgDirInStackDir, img_name), -1)
-        
+        img = img / 255
+        # print(img_name)
+        # print(img.shape)
+        img = np.reshape(img, (img.shape[0], img.shape[1], 1))
+        ch2 = np.zeros(img.shape)
+        img = np.concatenate((ch2, ch2, img), axis=2)
+        img = np.uint8(img)
+
         [w, h, _] = img.shape  # original image shape
         img = cv2.resize(img, (img.shape[1] * SCALE_FACTOR, img.shape[0] * SCALE_FACTOR), interpolation=cv2.INTER_CUBIC)
         # img, disectorwidth, leftCornerX, leftCornerY = PutDisectorOnImage(img, 25)
@@ -564,6 +572,7 @@ def ReadSequenceOfImages(image_folder, saveTo_folder, NameOfStack, ref_annotatio
 def iterateFunction():
     global mouseX, mouseY, ANNOTATION_DICT, REF_IMG_DIR, IS_VALID_STACK
     global REF_ANN_STACK_COUNT  # number of cells in the reference annotation if available
+    global total_time_taken
     path2Case = dirname
     # print(dirname)
     # print(dirname)
@@ -585,6 +594,7 @@ def iterateFunction():
 
             Stacks = os.listdir(os.path.join(path2Case, section))
             for stack in Stacks:
+                start_time = time.time()
                 if (stack.startswith(stackNameStartsWith) and os.path.isdir(os.path.join(path2Case, section, stack))):
                     # print('Now working')
                     NameOfStack = os.path.basename(os.path.normpath(dirname)) + '_' + section + '_' + stack
@@ -595,11 +605,13 @@ def iterateFunction():
                     try:
                         with open(os.path.join(dirname + "_annotated", "ManualMaskAnnotation.json"), 'r+') as read_fp:
                             annotation_case = json.load(read_fp)
+                            total_time_taken = annotation_case["totalTimeTakenInMinutes"]
                             if section in annotation_case and any(ann.get('StackName', None) == NameOfStack
                                                                   for ann in annotation_case[section]):
                                 print('Already annotated {}'.format(NameOfStack))
                                 if MODE == 'new':
                                     continue  # skip this stack if already annotated and the mode is new
+
                                 elif MODE == 'update':
                                     try:
                                         for ann in annotation_case[section]:
@@ -625,6 +637,7 @@ def iterateFunction():
                                         sys.exit()
                     except IOError:
                         print("Creating new annotation file.")
+                        total_time_taken = 0
 
                     # check if reference annotation for this stack is available
                     try:
@@ -676,6 +689,8 @@ def iterateFunction():
                         # Add this stack annotation to case annotation dict
                         annotation_case[section].append(ANNOTATION_DICT)
                         annotation_case['total_count'] += ANNOTATION_DICT['count']
+                        total_time_taken += (time.time() - start_time) / 60
+                        annotation_case["totalTimeTakenInMinutes"] = float(np.round(total_time_taken, 3))
                         if MODE == 'new':
                             annotation_case['total_stacks'] += 1
                     else:

@@ -19,8 +19,8 @@ queue = Queue()
 import copy
 from tqdm import tqdm
 from copy import deepcopy
+import time
 #from sort_slice_name_lst import *
-global total_time_taken
 global mouseX,mouseY
 global videoSpeed
 global rearFlag
@@ -37,7 +37,6 @@ pauseFlag = False
 CANVAS_IMAGE_X_SHIFT=450 #x start of image on canvas
 CANVAS_IMAGE_Y_SHIFT=150
 VALID_CELL_FLAG = True #if started drawing within the disector box
-total_time_taken = 0
 
 # Import constants module
 loader = importlib.machinery.SourceFileLoader('mc_constants',r'/Users/abhiramkandiyana/Microscopy/constants/constants.py')
@@ -395,6 +394,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     global TEXT_ID_ANNOTATED
     global correction_count
     global total_correction_count
+    global total_time_taken
     correction_count = 0
     RETURN = False
     QUIT = False
@@ -407,7 +407,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     TEXT_ID = -1
     TEXT_ID_ANNOTATED = -1
 
-
+    start_time = time.time()
     # read ref annotation image and display for ref
     #print(os.path.join(REF_IMG_DIR,NameOfStack+'.png'))
     try:
@@ -558,7 +558,9 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
                 draw_old_annotations()
         canvas.update()
 
-    visited["stacks"].append({"stackName":NameOfStack,"correctedMaskCount":correction_count})
+    time_taken = (time.time() - start_time)/60
+    total_time_taken = total_time_taken + time_taken
+    visited["stacks"].append({"stackName":NameOfStack,"correctedMaskCount":correction_count,"timeTaken":time_taken})
 
     # global corrected_masks
     total_correction_count = total_correction_count + correction_count
@@ -576,7 +578,7 @@ def iterateFunction():
     global visited
     total_correction_count = 0
     path2Case = dirname
-    visited = {"stacks": [], "totalCorrectedCount": 0}
+    visited = {"stacks": [], "totalCorrectedCount": 0,"totalTimeTakenInMinutes":0}
 
     #print(dirname)
     #print(dirname)
@@ -593,11 +595,11 @@ def iterateFunction():
         with open(os.path.join(dirname, visited_json), 'r') as read_fp:
             visited = json.load(read_fp)
         total_correction_count = visited["totalCorrectedCount"]
-        # total_time_taken = visited["totalTimeTakenInMinutes"]
+        total_time_taken = visited["totalTimeTakenInMinutes"]
     except:
         print("create a new visited json")
         total_correction_count=0
-        # total_time_taken = 0
+        total_time_taken = 0
 
 
 
@@ -726,6 +728,7 @@ def iterateFunction():
                     # update json in case of valid and invalid stacks both because 'all_stacks' field is updated in
                     # both cases
                     visited["totalCorrectedCount"] = total_correction_count
+                    visited[mc_constants.totalTimeTakenInMinutes] = total_time_taken
                     # total_time_taken += (time.time() - start_time) / 60
                     with open(os.path.join(dirname, save_annotation_folder_name, "ManualAnnotation.json"), 'w') as fp:
                         json.dump(annotation_case, fp, sort_keys=True, indent=2)

@@ -15,13 +15,13 @@ spec = importlib.util.spec_from_loader( 'mc_constants', loader )
 mc_constants = importlib.util.module_from_spec( spec )
 loader.exec_module( mc_constants)
 
-slide_name = mc_constants.slide1_64x64_1_Copy
+slide_name = mc_constants.Slide2
 
 StackName = mc_constants.stack_name_const
-path=os.path.join(mc_constants.inputImages,slide_name)
+path=os.path.join(mc_constants.inputImages,mc_constants.testing_dir,mc_constants.mask_annotation_automation_dir,slide_name)
 annotation_path = os.path.join(path,mc_constants.count_annotation_const)
 
-annotated_path = os.path.join(mc_constants.inputImages,slide_name+mc_constants.annotated_const)
+annotated_path = os.path.join(mc_constants.inputImages,mc_constants.testing_dir,mc_constants.mask_annotation_automation_dir,slide_name+mc_constants.annotated_const)
 if not os.path.exists(annotated_path):
     os.makedirs(annotated_path)
 count_annotated_folder_path = os.path.join(path,mc_constants.count_annotated_images)
@@ -48,7 +48,7 @@ except:
     print("Manual Mask annotation not found")
 
 try:
-    with open(os.path.join(path,mc_constants.count_annotation_const, count_annotations), 'r') as ref_fp:
+    with open(os.path.join(path,mc_constants.count_annotation_const,mc_constants.manual_annotation_json), 'r') as ref_fp:
         annotation_dict = json.load(ref_fp)
 except:
     print('Reference annotation json not available.')
@@ -71,6 +71,7 @@ no_of_stacks=0
 area_count=0
 for stack in image_dir:
     stackFullName = slide_name+'_'+image_folder+'_'+stack
+    print(stackFullName)
     if stackFullName not in annotated_stacks_list:
         try:
             gt_centroids_arr = np.array(centroid_dict[stack])

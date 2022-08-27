@@ -11,6 +11,7 @@ slide1_64x64_1_Copy = "slide1-64x64_1_Copy"
 
 
 Slide2 = "Slide2"
+Slide1 = "Slide1"
 stack_name_const = "StackName"
 small_stack_name_const = "stackName"
 stacks_const = "stacks"
@@ -20,9 +21,13 @@ count_annotation_const = "count_annotaion"
 count_annotated_images = 'count_annotated_images'
 annotated_const = "_annotated"
 manual_mask_annotation_json = "ManualMaskAnnotation.json"
+manual_annotation_json = "ManualAnnotation.json"
 cells_const = 'cells'
 centroid_const = 'centroid'
 sliceNo_const = 'sliceNo'
+testing_dir_name = 'TESTING-DATASET'
+mask_annotation_automation_dir = 'mask-annotation-automation-dir'
+totalTimeTakenInMinutes = "totalTimeTakenInMinutes"
 
 
 

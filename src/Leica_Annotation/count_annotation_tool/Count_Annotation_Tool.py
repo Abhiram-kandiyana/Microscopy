@@ -77,7 +77,7 @@ stackNameStartsWith = ''
 imgDirInStackDir = ''
 EDFDirInStackDir = 'EDF'
 EDF_name = 'EDF.bmp'  # have to change based on dataset. NeuN dual stain - 'EDF_FULL_Vahadane_pp.png', NeuN single stain - 'EDF_FULL_rgb2gray.png'
-MODE = 'update'  # In which mode to run this tool. 'update' - to update already existing annotations. 'new' - for new annotation.
+MODE = 'new'  # In which mode to run this tool. 'update' - to update already existing annotations. 'new' - for new annotation.
 # if MODE == 'new':
 #     save_annotation_folder_name = 'count_annotaion'
 # elif MODE == 'update':
@@ -336,10 +336,10 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
               'annotation based on prediction from pre-trained model.')
             sys.exit()
         refImg = cv2.resize(refImg, None, fx=SFACTOR, fy=SFACTOR, interpolation=cv2.INTER_CUBIC) # resize by scale factor
-        blank = np.zeros_like(refImg)
-        refImg = cv2.merge([blank, blank, refImg]) # make it color
+        #blank = np.zeros_like(refImg)
+        #refImg = cv2.merge([blank, blank, refImg]) # make it color
         refImg, _, _, _ = PutDisectorOnImage(refImg, 75)
-        cv2.imshow('Ref EDF Image', refImg)
+        cv2.imshow('Ref MIP Image', refImg)
     except:
         print('Reference annotation image not available.')
 
@@ -349,6 +349,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
 
     #listOfImages = os.listdir(image_folder)
     listOfImages = os.listdir(os.path.join(image_folder, imgDirInStackDir))
+
     listOfImagesOnly = []
     for imgName in listOfImages:
         if not os.path.isdir(os.path.join(image_folder,imgDirInStackDir,imgName)):
@@ -356,8 +357,6 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     listOfImages = listOfImagesOnly
     # listOfImages = sorted(listOfImages, key=sort_slice_name_lst)
     listOfImages = sorted(listOfImages)
-
-    print(listOfImages)
     # listOfImages.reverse()
     # if len(listOfImages) > 10:
     #     listOfImages = getMiddleTenFrames(listOfImages)
@@ -444,7 +443,6 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     #canvas.tag_bind(imgID, "<B1-Motion>", addLine)
     canvas.tag_bind(imgID, "<ButtonRelease-1>", save_cell)
 
-    print(ANNOTATION_DICT)
     # draw already available annotation on canvas
     for mark in ANNOTATION_DICT['cells']:
         x = mark['centroid'][0] + CANVAS_IMAGE_X_SHIFT
@@ -517,10 +515,8 @@ def iterateFunction():
                                     continue
                                 elif MODE == 'update':
                                     try:
-                                        annotation_found = False
                                         for ann in annotation_case[section]:
                                             if ann.get('StackName', None) == NameOfStack:
-                                                annotation_found = True
                                                 ANNOTATION_DICT = copy.deepcopy(ann)  # already available annotation
                                                 # dictionary in
                                                 # this stack. Append new annotation to it.
@@ -535,15 +531,10 @@ def iterateFunction():
                                                 #     canvas.create_line(x - 5, y - 5, x + 5, y + 5, width=3, fill="#00ff00")
                                                 #     canvas.update()
                                                 print('Annotation json for this stack is found.')
-
                                         print('Please continue updating the annotation.')
                                     except:
                                         print('No already available annotation found for this stack to update.')
-
                                         sys.exit()
-                            elif MODE == "update":
-                                print("stack not annotated to update")
-                                continue
 
                     except IOError:
                         print("Creating new annotation file.")
@@ -567,8 +558,8 @@ def iterateFunction():
                         # #EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 25)
                         EDF_img = cv2.imread(os.path.join(REF_IMG_DIR, NameOfStack + '.bmp'), -1)
                         #EDF_img = cv2.resize(refImg, None, fx=SFACTOR, fy=SFACTOR, interpolation=cv2.INTER_CUBIC)  # resize by scale factor
-                        blank = np.zeros_like(EDF_img)
-                        EDF_img = cv2.merge([blank, blank, EDF_img])  # make it color
+                        #blank = np.zeros_like(EDF_img)
+                        #EDF_img = cv2.merge([blank, blank, EDF_img])  # make it color
                         EDF_img, _, _, _ = PutDisectorOnImage(EDF_img, 75)
                         EDF_img = draw_cross(EDF_img, ANNOTATION_DICT['cells'][:])
                         cv2.imwrite(os.path.join(path2Case, save_annotation_folder_name, NameOfStack+'.png'), EDF_img)
