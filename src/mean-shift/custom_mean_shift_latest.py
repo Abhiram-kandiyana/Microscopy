@@ -44,7 +44,9 @@ tres1 = 14
 cluster_radius = 3
 invalid_stack_starts_with  = '.'
 
-annotation_path = os.path.join(mc_constants.testing_dir,slideName,mc_constants.count_annotation_const,mc_constants.count_annotation_json)
+annotation_path = os.path.join(mc_constants.testing_dir,slideName,mc_constants.count_annotation_const)
+if not os.path.exists(annotation_path):
+    os.makedirs(annotation_path)
 
 
 
@@ -471,13 +473,22 @@ for stackNo, stackName in enumerate(image_dir):
 
         labels_uniques = np.unique(labels)
         # adjusting the centroid of the cluster comparing the intensity of the centroid of the blob in each image
+        high_confidence_centroids = []
         for k in labels_uniques:
             intensity_per_img = {}
+            img_index_for_cluster =[]
             max_intensity = 0.0
             index_array = np.array([]);
+            img_count = 0
+            cluster_arr = []
+            centroid_intensity_arr = []
+            img_index_for_cluster =[]
+            centroid_arr = []
             for index, img in enumerate(labels):
 
                 if k in img and k != 100:
+                    img_count = img_count+1
+
                     index_array = np.argwhere(img == k)
                     # print(index_array)
                     blank_img = np.zeros(img.shape)
@@ -489,9 +500,75 @@ for stackNo, stackName in enumerate(image_dir):
                     cluster_centroid = np.uint8(cluster_centroid[1])
                     input_img = images_array1[index];
                     centroid_intensity = input_img[cluster_centroid[1], cluster_centroid[0]]
+                    centroid_dict = {"img_index":index,"intensity":centroid_intensity,"centroid":cluster_centroid}
+                    cluster_arr.append({"img_index":index,"intensity":centroid_intensity,"centroid":cluster_centroid})
                     if centroid_intensity > max_intensity:
                         max_intensity = centroid_intensity;
+
                         max_intensity_index = index
+            if(len(cluster_arr) == 1):
+                cluster_dict = cluster_arr[0]
+                req_img = labels[cluster_dict['img_index']]
+                req_img_uniques = np.unique(req_img)
+                high_confidence = True
+                for i in req_img_uniques:
+                    if(i != k):
+                        req_index_array = np.argwhere(img == k)
+                        req_blank_img = np.zeros(img.shape)
+                        for i in req_index_array:
+                            req_blank_img[i[0], i[1]] = 255
+                        req_blank_img = np.uint8(req_blank_img)
+                        _, _, _, req_cluster_centroid = cv2.connectedComponentsWithStats(req_blank_img, 8, cv2.CV_32S)
+                        if(weightedEuclideanDist(cluster_dict['centroid'],req_cluster_centroid,[0.5,0.5]) < 9):
+                            high_confidence = False
+                if high_confidence == True:
+                    high_confidence_centroids.append([cluster_dict['centroid'].tolist()[0],cluster_dict['centroid'].tolist()[1],cluster_dict['img_index']])
+
+            elif(len(cluster_arr) == 2):
+                high_confidence = True
+                max_intensity_1 = 0
+                max_cluster_dict={}
+                if abs(cluster_arr[0]['intensity'] - cluster_arr[1]['intensity']) > 50:
+                    for cluster_dict in cluster_arr:
+                        req_img = labels[cluster_dict['img_index']]
+                        req_img_uniques = np.unique(req_img)
+                        high_confidence = True
+                        for i in req_img_uniques:
+                            if (i != k):
+                                req_index_array = np.argwhere(img == k)
+                                req_blank_img = np.zeros(img.shape)
+                                for i in req_index_array:
+                                    req_blank_img[i[0], i[1]] = 255
+                                req_blank_img = np.uint8(req_blank_img)
+                                _, _, _, req_cluster_centroid = cv2.connectedComponentsWithStats(req_blank_img, 8,
+                                                                                                 cv2.CV_32S)
+                                if (weightedEuclideanDist(cluster_dict['centroid'], req_cluster_centroid,[0.5, 0.5]) < 9):
+                                    high_confidence = False
+                                    break
+                                if cluster_dict['intensity'] > max_intensity_1:
+                                    max_cluster_dict = cluster_dict
+                        if high_confidence == False:
+                            break
+                else:
+                    high_confidence = False
+
+                if high_confidence == True:
+
+                    high_confidence_centroids.append([max_cluster_dict['centroid'].tolist()[0],max_cluster_dict['centroid'].tolist()[1],max_cluster_dict['img_index']])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             index_array = np.argwhere(labels == k)
             if (index_array.size > 0):
                 already_marked = False
@@ -581,8 +658,12 @@ for stackNo, stackName in enumerate(image_dir):
                         _, _, _, cluster_centroids = cv2.connectedComponentsWithStats(blank_img, 8, cv2.CV_32S)
 
                         for centroid in cluster_centroids[1:]:
-                            cluster_centroid = np.uint8(centroid)
-                            cells.append({"centroid": cluster_centroid.tolist(), "lineIds": [-1, -1], "sliceNo": index})
+                            cluster_centroid = np.uint8(centroid).tolist()
+                            if [cluster_centroid[0],cluster_centroid[1],index] in high_confidence_centroids:
+                                cells.append({"centroid": cluster_centroid, "lineIds": [-1, -1], "sliceNo": index,"high_confidence":True})
+                            else:
+                                cells.append({"centroid": cluster_centroid, "lineIds": [-1, -1], "sliceNo": index,
+                                     mc_constants.high_confidence_const: False})
 
         cell_count = len(cells)
         total_count += cell_count
@@ -593,7 +674,7 @@ annotation_dir = {image_dir_name:ManualAnnotation,"all_stacks":len(ManualAnnotat
 
 
 try:
-    with open(annotation_path,'w') as fp:
+    with open(os.path.join(annotation_path,mc_constants.manual_annotation_json),'w') as fp:
         json.dump(annotation_dir, fp, sort_keys=True, indent=2)
 except Exception as e:
     print("error while writing the json file:  {}".format(e))

@@ -23,11 +23,13 @@ annotated_const = "_annotated"
 manual_mask_annotation_json = "ManualMaskAnnotation.json"
 manual_annotation_json = "ManualAnnotation.json"
 cells_const = 'cells'
+high_confidence_const="high_confidence"
 centroid_const = 'centroid'
 sliceNo_const = 'sliceNo'
 testing_dir_name = 'TESTING-DATASET'
 mask_annotation_automation_dir = 'mask-annotation-automation-dir'
 totalTimeTakenInMinutes = "totalTimeTakenInMinutes"
+lineIds = "lineIds"
 
 
 
