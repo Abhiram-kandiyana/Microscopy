@@ -346,7 +346,7 @@ def save_cell1(event):
     height = im.shape[1]
     # im = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
     # print(im[markedy,markedx])
-    contours,hv2 = cv2.findContours(im,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+    contours,hv2 = cv2.findContours(im,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
     # for j in line_id_dict[i]:
     #     for k in j:
     #         canvas.delete(k)

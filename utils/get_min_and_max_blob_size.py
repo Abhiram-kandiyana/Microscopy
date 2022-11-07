@@ -5,9 +5,17 @@ import os
 from statistics import mean
 from statistics import median
 import matplotlib.pyplot as plt
+import importlib
+
+loader = importlib.machinery.SourceFileLoader( 'mc_constants', r'/Users/abhiramkandiyana/Microscopy/constants/constants.py')
+spec = importlib.util.spec_from_loader( 'mc_constants', loader )
+mc_constants = importlib.util.module_from_spec( spec )
+loader.exec_module( mc_constants)
+
+stackNameNotStartsWith = "."
 
 ##INPUTS: START
-path_to_ST = r'C:\Users\KAVYA\Abhiram\microscopy\16bitimages\masks-split\NeoCx\train'#r'C:\Users\palakdave\MedicalImagingProject\Data\Leica_images\64x64\experiments\66\Slide1\train\masks'
+path_to_ST = mc_constants.slide1_64X64_masks_train  #r'C:\Users\palakdave\MedicalImagingProject\Data\Leica_images\64x64\experiments\66\Slide1\train\masks'
 ##INPUTS: END
 stack_names = os.listdir(path_to_ST)
 # image_names = os.listdir(path_to_ST)
@@ -19,7 +27,9 @@ all_areas = []
 all_widths = []
 all_heights = []
 for stack_name in stack_names:
-    print(stack_name)
+    if(stack_name.startswith(stackNameNotStartsWith)):
+        continue
+
     image_names = os.listdir(os.path.join(path_to_ST,stack_name))
     image_names = [i for i in image_names if os.path.isfile(os.path.join(path_to_ST,stack_name,i))]
     for image_name in image_names:
@@ -28,9 +38,9 @@ for stack_name in stack_names:
 
         for idx in range(1,retval-1):
             if stats[idx,cv2.CC_STAT_AREA]==1:
-                cv2.imshow("img",image)
+                # cv2.imshow("img",image)
                 print(image_name)
-                cv2.waitKey()
+                # cv2.waitKey()
 
         areas =[stats[i,cv2.CC_STAT_AREA] for i in range(1, retval)]  # discarding zero bcz that is background
         bb_widths = [stats[i,cv2.CC_STAT_WIDTH] for i in range(1, retval)]

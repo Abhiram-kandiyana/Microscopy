@@ -42,3 +42,9 @@ def get_stack_names_from_visited_json(path):
     visited_stacks = np.array(visited_json[mc_constants.stacks_const])
     visited_stack_names = [ stack[mc_constants.small_stack_name_const] for stack in visited_stacks ]
     return visited_stack_names
+def check_value(value,limit):
+    if(value < 0):
+        value = 0
+    elif(value > limit):
+        value = limit
+    return value

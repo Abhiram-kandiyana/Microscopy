@@ -8,6 +8,7 @@ image_dir = "NeoCx"
 old = "old_"
 slide1_64x64_1 ="slide1-64x64_1"
 slide1_64x64_1_Copy = "slide1-64x64_1_Copy"
+tif_extension = '.tif'
 
 
 Slide2 = "Slide2"
@@ -30,6 +31,8 @@ testing_dir_name = 'TESTING-DATASET'
 mask_annotation_automation_dir = 'mask-annotation-automation-dir'
 totalTimeTakenInMinutes = "totalTimeTakenInMinutes"
 lineIds = "lineIds"
+ms_final_results = "ms_final_results"
+labels = "labels"
 
 
 
@@ -55,7 +58,7 @@ count_annotation_json = "ManualAnnotation.json"
 
 visited_json = "visited.json"
 
-slide1_64X64_masks_train  =r"/Users/abhiramkandiyana/microscopy/16bitimages/masks-split/NeoCx/train"
+slide1_64X64_masks_train  =r"/Users/abhiramkandiyana/microscopy/16bitimages/slide1-masks-split/NeoCx/train"
 
 testing_img_dir = r"/Users/abhiramkandiyana/microscopy/mean-shift/testing/NeoCx"
 
@@ -65,17 +68,22 @@ slide1_64X64_masks_test  = r"/Users/abhiramkandiyana/microscopy/16bitimages/mask
 
 slide2_masks_test  = r"/Users/abhiramkandiyana/microscopy/16bitimages/Slide2-masks-split/NeoCx/test"
 
-slide1_64X64_masks_val  =r"/Users/abhiramkandiyana/microscopy/16bitimages/masks-split/NeoCx/val"
+slide1_64X64_masks_val  =r"/Users/abhiramkandiyana/microscopy/16bitimages/slide1-masks-split/NeoCx/val"
 
 marked_images_path = r"/Users/abhiramkandiyana/Microscopy/result_images/count_annotation_automation/marked_images_latest"
 
 csv_results_path = r"/Users/abhiramkandiyana/Microscopy/results/count_annotation_automation/csv_results"
 
+ms_results_path = r"/Users/abhiramkandiyana/Microscopy/result_images/count_annotation_automation"
+
+
 predicted_clusters_images_path = r"/Users/abhiramkandiyana/Microscopy/result_images/count_annotation_automation/custom_ms_results"
 
+saved_models_path = r"/Users/abhiramkandiyana/Microscopy/saved_models"
 
+ml_data_path = r"/Users/abhiramkandiyana/Microscopy/16bitimages/ml_data"
 
-
+ml_OneD_data_path = r"/Users/abhiramkandiyana/Microscopy/16bitimages/ml_data/oneD"
 def group_consecutives(vals, step=1):
     """Return list of consecutive lists of numbers from vals (number list)."""
     run = []

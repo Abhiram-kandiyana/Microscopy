@@ -111,6 +111,8 @@ def xy(event):
     canvas.focus_set()
     cell['sliceNo'] = i
     cell['centroid'] = (round((lastx-CANVAS_IMAGE_X_SHIFT)/SFACTOR), round((lasty-CANVAS_IMAGE_Y_SHIFT)/SFACTOR)) #centroid of contour (cX,cY)
+    cell[mc_constants.high_confidence_const] = False
+    cell[mc_constants.lineIds] = [-1,-1]
 
 def addLine(event):
     global lastx, lasty,i
@@ -182,8 +184,8 @@ def save_cell(event):
     #cv2.imshow('mask',temp)
     x = lastx
     y = lasty
-    canvas.create_line(x-MARKER_SIZE, y+MARKER_SIZE, x+MARKER_SIZE, y-MARKER_SIZE, width=MARKER_WIDTH, fill="#0000FF")
-    canvas.create_line(x-MARKER_SIZE, y-MARKER_SIZE, x+MARKER_SIZE, y+MARKER_SIZE, width=MARKER_WIDTH, fill="#0000FF")
+    canvas.create_line(x-MARKER_SIZE, y+MARKER_SIZE, x+MARKER_SIZE, y-MARKER_SIZE, width=MARKER_WIDTH, fill="#964B00")
+    canvas.create_line(x-MARKER_SIZE, y-MARKER_SIZE, x+MARKER_SIZE, y+MARKER_SIZE, width=MARKER_WIDTH, fill="#964B00")
     print("original coordinates: ({}, {})".format(x,y))
      #save the cell
     ANNOTATION_DICT['cells'].append(cell)
@@ -367,8 +369,12 @@ def draw_old_annotations():
         if(mark['sliceNo'] == i):
             x = (mark['centroid'][0] * SFACTOR) + CANVAS_IMAGE_X_SHIFT
             y = (mark['centroid'][1] * SFACTOR) + CANVAS_IMAGE_Y_SHIFT
-            line1 = canvas.create_line(x - MARKER_SIZE, y + MARKER_SIZE, x + MARKER_SIZE, y - MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
-            line2 = canvas.create_line(x - MARKER_SIZE, y - MARKER_SIZE, x + MARKER_SIZE, y + MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+            if(mark[mc_constants.high_confidence_const] == True):
+                line1 = canvas.create_line(x - MARKER_SIZE, y + MARKER_SIZE, x + MARKER_SIZE, y - MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+                line2 = canvas.create_line(x - MARKER_SIZE, y - MARKER_SIZE, x + MARKER_SIZE, y + MARKER_SIZE, width=MARKER_WIDTH, fill="#00ff00")
+            else:
+                line1 = canvas.create_line(x - MARKER_SIZE, y + MARKER_SIZE, x + MARKER_SIZE, y - MARKER_SIZE,width=MARKER_WIDTH, fill="#0000ff")
+                line2 = canvas.create_line(x - MARKER_SIZE, y - MARKER_SIZE, x + MARKER_SIZE, y + MARKER_SIZE,width=MARKER_WIDTH, fill="#0000ff")
             LINE_IDS_PREV .append([line1,line2])
         mark['lineIds'] = [line1,line2]
         ann_dict_with_lineIds.append(mark)
@@ -407,7 +413,6 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
     TEXT_ID = -1
     TEXT_ID_ANNOTATED = -1
 
-    start_time = time.time()
     # read ref annotation image and display for ref
     #print(os.path.join(REF_IMG_DIR,NameOfStack+'.png'))
     try:
@@ -558,9 +563,7 @@ def ReadSequenceOfImages(image_folder, NameOfStack):
                 draw_old_annotations()
         canvas.update()
 
-    time_taken = (time.time() - start_time)/60
-    total_time_taken = total_time_taken + time_taken
-    visited["stacks"].append({"stackName":NameOfStack,"correctedMaskCount":correction_count,"timeTaken":time_taken})
+    visited["stacks"].append({"stackName":NameOfStack,"correctedMaskCount":correction_count})
 
     # global corrected_masks
     total_correction_count = total_correction_count + correction_count
@@ -610,8 +613,8 @@ def iterateFunction():
 
             Stacks = os.listdir(os.path.join(path2Case,section))
             for stack in Stacks:
+                start_time = time.time()
                 print("stack name",stack)
-                # start_time = time.time()
                 if (stack.startswith(stackNameStartsWith) and os.path.isdir(os.path.join(path2Case,section,stack))):
                     #print('Now working')
                     NameOfStack = os.path.basename(os.path.normpath(dirname))+'_'+section+'_'+stack
@@ -625,7 +628,7 @@ def iterateFunction():
                             print("visited stacks:", visited_stack["stackName"])
                             if NameOfStack == visited_stack["stackName"]:
                                 stack_found = True
-                                continue
+                                break
                         if (stack_found):
                             print("stack {} is already verified".format(NameOfStack))
                             continue
@@ -728,8 +731,8 @@ def iterateFunction():
                     # update json in case of valid and invalid stacks both because 'all_stacks' field is updated in
                     # both cases
                     visited["totalCorrectedCount"] = total_correction_count
+                    total_time_taken += (time.time() - start_time) / 60
                     visited[mc_constants.totalTimeTakenInMinutes] = total_time_taken
-                    # total_time_taken += (time.time() - start_time) / 60
                     with open(os.path.join(dirname, save_annotation_folder_name, "ManualAnnotation.json"), 'w') as fp:
                         json.dump(annotation_case, fp, sort_keys=True, indent=2)
                     with open(os.path.join(dirname, visited_json), 'w') as fp:
